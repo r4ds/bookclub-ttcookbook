@@ -1,4 +1,4 @@
-# {{{chapter_title}}}
+# Doctors across the world: making maps with ggplot2
 
 **Learning objectives:**
 
