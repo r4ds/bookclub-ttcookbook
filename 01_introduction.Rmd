@@ -16,6 +16,7 @@
 
 ![](https://bsky.app/profile/stephenturner.us/post/3mbloaznro22s)
 
+
 ##  What we will learn {-}
 
 4 sections and 14 chapters. 
@@ -30,6 +31,7 @@
 
 - **Chapter 14:** Other tips and tricks: to help you improve your plots.
 
+
 ## Structure of each chapter: {-}
 
 - Intro to a dataset (local CSV files, APIs, or from URLs)
@@ -40,24 +42,8 @@
 - A few exercises (open-ended)
 
 
-
 ## This book assumes that you... {-}
 
 - know the basics of the `tidyverse`,
 - know how to install and load packages, 
 - can call a function and save the output to variables.
-
-## {-}
-
-
-### Cohort 1 {-}
-
-`r knitr::include_url("https://www.youtube.com/embed/URL")`
-
-<details>
-<summary> Meeting chat log </summary>
-
-```
-LOG
-```
-</details>
