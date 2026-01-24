@@ -6,7 +6,7 @@
 -   Decide whether color is necessary for a chart, choose accessible palettes, and load palettes from other R packages;
 -   Highlight subsets of data on a chart to make trends clearer while still allowing easy comparisons.
 
-## SLIDE 1 {.unnumbered}
+## Data Exporation Process {.unnumbered}
 
 Nicola seems to establish a process for exploring data and developing a plot:
 
@@ -28,7 +28,7 @@ Nicola seems to establish a process for exploring data and developing a plot:
 
         -   Styling using `theme`
 
-## Data Exploration
+## Data Exploration {-}
 
 ```{r}
 library(tidyverse)
@@ -43,11 +43,11 @@ museums |>
     geom_bar()
 ```
 
-## Nicola's Exploratory Sketch
+## Nicola's Exploratory Sketch {-}
 
 ![](https://nrennie.rbind.io/art-of-viz/images/sketch-museums.png)
 
-## Data Wrangling - Part 1 (opening/closing)
+## Data Wrangling - Part 1 (opening/closing) {-}
 
 One tiny change - the midpoint of two numbers that are the same is the same number, so I don't think we need the if/then statement in the chapter
 
@@ -88,7 +88,7 @@ museum_data <- museums |>
   arrange(deprivation)
 ```
 
-## Data Wrangling - Part 2 (function for museums open for each year)
+## Data Wrangling - Part 2 (function for museums open for each year) {-}
 
 ```{r}
 num_year <- function(year, dep, data = museum_data) {
@@ -124,7 +124,7 @@ plot_data <- results |>
   )
 ```
 
-## A first plot
+## A first plot {-}
 
 ```{r}
 plot_data |> 
@@ -134,7 +134,7 @@ plot_data |>
 
 Nicola discusses using facets and possibly an area plot, but decides that you can't easily compare the different ones with a facet - so enter `gghighlight`
 
-## Using gghighlight
+## Using gghighlight {-}
 
 ```{r}
 library(gghighlight)
@@ -148,7 +148,7 @@ ggplot(mapping = aes(x = year, y = museums, color = deprivation)) +
 
 Looks good - Nicola seems to think that, since nearly everyone starts in a similar place, we can do a last bit of wrangling to make this a percent change graph
 
-## gghighlight and percent change
+## gghighlight and percent change {-}
 
 ```{r}
 lookup <- plot_data |>
@@ -177,7 +177,7 @@ basic_plot <- ggplot(
 basic_plot
 ```
 
-## Advanced Styling
+## Advanced Styling {-}
 
 Nicola's next steps
 
@@ -187,7 +187,7 @@ Nicola's next steps
 
 -   It’s not immediately clear what this chart shows: it could do with some text to explain what’s going on.
 
-## Color
+## Color {-}
 ```{r}
 bg_col <- "#FAFAFA"
 text_col <- "black"
@@ -203,7 +203,7 @@ col_plot <- basic_plot +
 col_plot
 ```
 
-## Text and Font
+## Text and Font {-}
 ```{r}
 library(showtext)
 
@@ -226,7 +226,7 @@ text_plot <- col_plot +
 text_plot
 ```
 
-## Styling
+## Styling {-}
 
 ```{r}
 library(ggtext)
@@ -272,19 +272,3 @@ final <- text_plot +
 
 final
 ```
-
-## Meeting Videos {.unnumbered}
-
-### Cohort 1 {.unnumbered}
-
-`r knitr::include_url("https://www.youtube.com/embed/URL")`
-
-<details>
-
-<summary>Meeting chat log</summary>
-
-```         
-LOG
-```
-
-</details>
