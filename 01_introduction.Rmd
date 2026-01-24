@@ -2,23 +2,48 @@
 
 **Learning objectives:**
 
-- THESE ARE NICE TO HAVE BUT NOT ABSOLUTELY NECESSARY
+- Introduce the book The Art of Data Visualization with `ggplot2` by Nicola Rennie and understand the overall structure of the book
+- Explain how the book club works
+- Afterwards, you may be able to decide whether this book is right for you
+- Improve the way you create graphs in R using ggplot2 in terms of programming and design. 
 
-## SLIDE 1 {-}
+## Who is this book aimed at? {-}
 
-- ADD SLIDES AS SECTIONS (`##`).
-- TRY TO KEEP THEM RELATIVELY SLIDE-LIKE; THESE ARE NOTES, NOT THE BOOK ITSELF.
+- Anyone who wishes to develop/improve their data viz skills in R. 
+- It's super useful if you are familar with the `tidyverse`.  
+- You DO NOT need to be experienced in `ggplot2`. 
+- It could also be helpful for users who know how to do data viz in other languages (e.g., python) but wish how to do the same type of graphs in R. 
 
-## Meeting Videos {-}
+![](https://bsky.app/profile/stephenturner.us/post/3mbloaznro22s)
 
-### Cohort 1 {-}
 
-`r knitr::include_url("https://www.youtube.com/embed/URL")`
+##  What we will learn {-}
 
-<details>
-<summary> Meeting chat log </summary>
+4 sections and 14 chapters. 
 
-```
-LOG
-```
-</details>
+- **Section 1:** Common charts don't need to be boring (4 chapters): teaches you how to make classic chart types more effective and interesting.
+
+- **Section 2:** Making use of icons, fonts, and text  (3 chapters): you’ll see different ways to load fonts into R, use icons within charts, and use colored text as an alternative to a traditional legend.
+
+- **Section 3:** Working with images (2 chapters): you’ll see examples of loading and processing images in R, and learn how to add them to plots to create custom labels.
+
+- **Section 4:** Visualizing spatial data (3 chapters): manipulate spatial data. 
+
+- **Chapter 14:** Other tips and tricks: to help you improve your plots.
+
+
+## Structure of each chapter: {-}
+
+- Intro to a dataset (local CSV files, APIs, or from URLs)
+- Explore the dataset 
+- Prepare the plot 
+- Advanced styling 
+- Reflection on the viz that we just created 
+- A few exercises (open-ended)
+
+
+## This book assumes that you... {-}
+
+- know the basics of the `tidyverse`,
+- know how to install and load packages, 
+- can call a function and save the output to variables.
