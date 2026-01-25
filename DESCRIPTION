@@ -9,7 +9,12 @@ Depends:
     R (>= 3.1.0)
 Imports: 
     bookdown,
+    gghighlight,
+    ggtext,
+    ggview,
     rmarkdown,
+    showtext,
     tidytuesdayR,
-    tidyverse
+    tidyverse,
+    viridis
 Encoding: UTF-8
