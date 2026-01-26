@@ -7,6 +7,7 @@
 -   Compare line charts and area charts for showing data over time, alongside whether to create small multiples or show all data on one chart.
 -   Decide whether color is necessary for a chart, choose accessible palettes, and load palettes from other R packages;
 -   Highlight subsets of data on a chart to make trends clearer while still allowing easy comparisons.
+<<<<<<< HEAD
 
 ## Understanding Process {-}
 
@@ -228,6 +229,229 @@ text_plot <- col_plot +
 text_plot
 ```
 
+=======
+
+## Data Exporation Process {.unnumbered}
+
+Nicola seems to establish a process for exploring data and developing a plot:
+
+-   Exploratory work:
+
+    -   Data exploration
+
+    -   Exploratory sketches
+
+-   Preparing a plot:
+
+    -   Data wrangling
+
+    -   A first plot
+
+    -   Iterative Revisions
+
+        -   Using new packages
+
+        -   Styling using `theme`
+
+## Data Exploration {-}
+
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tt_load("2022-11-22")
+museums <- tuesdata$museums
+
+## make a barplot, using tidyverse
+museums |> 
+    ggplot(aes(x=Area_Deprivation_index)) +
+    geom_bar()
+```
+
+## Nicola's Exploratory Sketch {-}
+
+![](https://nrennie.rbind.io/art-of-viz/images/sketch-museums.png)
+
+## Data Wrangling - Part 1 (opening/closing) {-}
+
+One tiny change - the midpoint of two numbers that are the same is the same number, so I don't think we need the if/then statement in the chapter
+
+```{r}
+museum_data <- museums |>
+  select(
+    Year_opened, Year_closed, Area_Deprivation_index
+  ) |>
+  drop_na() |>
+  separate_wider_delim(
+    Year_opened,
+    delim = ":",
+    names = c("opened1", "opened2")
+  ) |>
+  separate_wider_delim(
+    Year_closed,
+    delim = ":",
+    names = c("closed1", "closed2")
+  ) |>
+  mutate(
+    across(
+      c(opened1, opened2, closed1, closed2), as.numeric
+    ),
+    Area_Deprivation_index = factor(
+      Area_Deprivation_index,
+      levels = 1:10
+    )
+  ) |> 
+    mutate(across(
+    c(closed1, closed2),
+    ~ if_else(.x == 9999, NA_real_, .x)
+  )) |>
+  mutate(closed = round((closed2 + closed1) / 2),
+        opened = round((opened2 + opened1)/2)
+  ) |>
+  select(Area_Deprivation_index, opened, closed) |>
+  rename(deprivation = Area_Deprivation_index) |>
+  arrange(deprivation)
+```
+
+## Data Wrangling - Part 2 (function for museums open for each year) {-}
+
+```{r}
+num_year <- function(year, dep, data = museum_data) {
+  df <- filter(data, deprivation == dep)
+  num_open <- sum(df$opened <= year)
+  num_closed <- sum(df$closed <= year, na.rm = TRUE)
+  diff <- num_open - num_closed
+  return(diff)
+}
+
+all_years <- 1960:2021
+deps <- 1:10
+output <- pmap_vec(
+  expand.grid(all_years, deps),
+  ~ num_year(year = .x, dep = .y)
+)
+results <- matrix(output,
+  nrow = length(all_years),
+  byrow = FALSE
+)
+colnames(results) <- 1:10
+
+plot_data <- results |>
+  as_tibble() |>
+  mutate(year = all_years) |>
+  pivot_longer(
+    -year,
+    names_to = "deprivation",
+    values_to = "museums"
+  ) |>
+  mutate(
+    deprivation = factor(deprivation, levels = 1:10)
+  )
+```
+
+## A first plot {-}
+
+```{r}
+plot_data |> 
+    ggplot(aes(x=year, y=museums, color=deprivation)) +
+    geom_line()
+```
+
+Nicola discusses using facets and possibly an area plot, but decides that you can't easily compare the different ones with a facet - so enter `gghighlight`
+
+## Using gghighlight {-}
+
+```{r}
+library(gghighlight)
+
+plot_data |> 
+ggplot(mapping = aes(x = year, y = museums, color = deprivation)) +
+  geom_line() +
+  facet_wrap(~deprivation, nrow = 2) +
+  gghighlight(use_direct_label = FALSE)
+```
+
+Looks good - Nicola seems to think that, since nearly everyone starts in a similar place, we can do a last bit of wrangling to make this a percent change graph
+
+## gghighlight and percent change {-}
+
+```{r}
+lookup <- plot_data |>
+  filter(year == 1960) |>
+  select(deprivation, museums)
+
+new_plot_data <- plot_data |>
+  left_join(lookup, by = "deprivation") |>
+  rename(
+    museums = museums.x,
+    museums_1960 = museums.y
+  ) |>
+  mutate(
+    change = (
+      100 * (museums - museums_1960) / museums_1960)
+  ) |>
+  select(year, deprivation, change)
+
+basic_plot <- ggplot(
+  data = new_plot_data,
+  mapping = aes(x = year, y = change, color = deprivation)
+) +
+  geom_line() +
+  facet_wrap(~deprivation, nrow = 2) +
+  gghighlight(use_direct_label = FALSE)
+basic_plot
+```
+
+## Advanced Styling {-}
+
+Nicola's next steps
+
+-   We can get rid of the legend. The colors are based on the levels of deprivation, which are already labelled on the facet titles.
+
+-   The default choice of color isn’t great - they’re not grayscale printing friendly, and they’re not colorblind friendly either.
+
+-   It’s not immediately clear what this chart shows: it could do with some text to explain what’s going on.
+
+## Color {-}
+```{r}
+bg_col <- "#FAFAFA"
+text_col <- "black"
+### this doesn't get used until later on in theme
+
+library(viridis)
+
+col_plot <- basic_plot +
+  scale_color_viridis(
+    discrete = TRUE,
+    direction = -1
+  )
+col_plot
+```
+
+## Text and Font {-}
+```{r}
+library(showtext)
+
+font_add_google(name = "Raleway")
+showtext_auto()
+showtext_opts(dpi = 300)
+body_font <- "Raleway"
+
+title <- "Are there fewer museums opening in more deprived areas?"
+st <- "The change in the estimated number of open museums since 1960 is significantly lower in areas with higher levels of deprivation. *Since around 2000, the number of open museums has stagnated across all areas, regardless of deprivation index. However, the rate of growth prior to this stagnation is lower in more deprived areas."
+cap <- "*The Index of Multiple Deprivation (IMD) measures the relative deprivation of geographic areas in the UK, aggregating different dimensions (income, employment, education, health, crime, housing, and living environment). The index ranges from 1 (most deprived) to 10 (least deprived).<br><br>**In some instances it has been impossible to establish an exact opening or closing date for a museum. In these cases, museums’ opening and closing dates are taken to be the mid point of a specified range of possible dates.<br><br>N. Rennie | Data: museweb.dcs.bbk.ac.uk"
+## interesting that this is done in HTML coding
+
+text_plot <- col_plot +
+  labs(
+    title = title, subtitle = st, caption = cap,
+    x = "",
+    y = "% change in estimated number of\nopen museums since 1960**"
+  )
+text_plot
+```
+
+>>>>>>> 3ff6f9e20bcf82056485ceb081e653aa4d37ab4d
 ## Styling {-}
 
 ```{r}
