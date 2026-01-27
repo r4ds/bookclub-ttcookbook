@@ -12,9 +12,11 @@ Imports:
     gghighlight,
     ggtext,
     ggview,
+    poissoned,
     rmarkdown,
     showtext,
     tidytuesdayR,
     tidyverse,
-    viridis
+    viridis,
+    visdat
 Encoding: UTF-8

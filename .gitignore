@@ -10,3 +10,5 @@ bookclub-ttcookbook.knit.md
 bookclub-ttcookbook_files
 libs
 *.html
+
+/.quarto/

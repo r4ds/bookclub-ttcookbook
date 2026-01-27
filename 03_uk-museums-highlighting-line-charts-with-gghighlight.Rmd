@@ -1,12 +1,14 @@
 # UK museums: highlighting line charts with gghighlight
 
+
+
 **Learning objectives:**
 
 -   Compare line charts and area charts for showing data over time, alongside whether to create small multiples or show all data on one chart.
 -   Decide whether color is necessary for a chart, choose accessible palettes, and load palettes from other R packages;
 -   Highlight subsets of data on a chart to make trends clearer while still allowing easy comparisons.
 
-## Data Exporation Process {.unnumbered}
+## Understanding Process {-}
 
 Nicola seems to establish a process for exploring data and developing a plot:
 

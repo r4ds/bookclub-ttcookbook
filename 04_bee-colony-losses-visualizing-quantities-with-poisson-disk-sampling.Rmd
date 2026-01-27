@@ -2,9 +2,219 @@
 
 **Learning objectives:**
 
-- THESE ARE NICE TO HAVE BUT NOT ABSOLUTELY NECESSARY
+-   Get a quick overview of a dataset as a heatmap, and visualize missing data
+-   Re-purpose a dot density plot, typically used for geographic data, to show trends over time as an alternative to bar charts; and
+-   Use simulation to generate the required dots, and create another custom chart type using just the geometries available in ggplot2.
 
-## SLIDE 1 {-}
+## Understanding Process {-}
 
-- ADD SLIDES AS SECTIONS (`##`).
-- TRY TO KEEP THEM RELATIVELY SLIDE-LIKE; THESE ARE NOTES, NOT THE BOOK ITSELF.
+Nicola seems to establish a process for exploring data and developing a plot:
+
+-   Exploratory work:
+
+    -   Data exploration
+
+    -   Exploratory sketches
+
+-   Preparing a plot:
+
+    -   Data wrangling
+
+    -   A first plot
+
+    -   Iterative Revisions
+
+        -   Using new packages
+
+        -   Styling using `theme`
+
+## Data Exploration {-}
+
+```{r}
+options(scipen=999)
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tt_load("2022-01-11")
+colony <- tuesdata$colony
+stressor <- tuesdata$stressor
+
+colony |> 
+    ggplot(aes(x=as.factor(year), y=colony_n)) +
+    geom_boxplot() +coord_flip() +
+    labs(x="Year", y="Number of colonies", title="Lots of outliers")
+```
+
+## Data exploration, part 2 {-}
+
+```{r}
+colony |> 
+    filter(year==2020) |> 
+    ggplot(aes(y=state, x=colony_n)) +
+    geom_boxplot() +
+    labs(caption="United States shows up...")
+```
+
+## Looking for missing data
+```{r}
+library(visdat)
+
+colony |>
+    filter(state=="Alabama") |> 
+  abbreviate_vars(min_length = 8) |>
+  vis_miss() +
+  theme(plot.margin = margin(r = 25))
+```
+
+## Exploratory sketch
+
+![](https://nrennie.rbind.io/art-of-viz/images/sketch-bees.png)
+
+## Preparing a plot
+Limiting to 5 states
+```{r}
+
+states_to_plot <- c(
+  "California", "North Dakota", "Florida",
+  "Texas", "Idaho", "South Dakota"
+)
+
+plot_data <- colony |>
+  filter(
+    state %in% states_to_plot,
+    months == "October-December"
+  ) |>
+  select(
+    year, state, colony_n
+  )
+
+state_levels <- plot_data |>
+  filter(year == 2020) |>
+  arrange(desc(colony_n)) |>
+  pull(state)
+```
+
+## getting a Poisson disk
+```{r}
+library(poissoned)
+bees_grid <- plot_data |>
+  rowwise() |>
+  mutate(
+    pts = list(
+      poisson2d(r = 200000 / colony_n)
+    )
+  )
+
+bees_plot_data <- bees_grid |>
+  unnest(pts) |>
+  mutate(
+    state = factor(state, levels = state_levels)
+  )
+```
+
+## A first plot
+```{r}
+basic_plot <- ggplot(
+  data = bees_plot_data,
+  mapping = aes(x = x, y = y)) +
+  geom_point() +
+  facet_grid(state ~ year, switch = "both")
+basic_plot
+```
+
+## Styling
+```{r}
+bg_col <- "#FECC27"
+highlight_col <- "black"
+
+basic_plot <- ggplot(
+  data = bees_plot_data,
+  mapping = aes(x = x, y = y)
+) +
+  geom_point(
+    size = 0.1,
+    color = bg_col
+  ) +
+  facet_grid(state ~ year, switch = "both")
+basic_plot
+```
+
+## Font and text
+```{r}
+library(showtext)
+
+font_add_google(
+  name = "Red Hat Text", family = "red_hat"
+)
+showtext_auto()
+showtext_opts(dpi = 300)
+body_font <- "red_hat"
+
+title <- "Bee colony losses in the United States"
+st <- "Bees are vital for the preservation of ecological balance and biodiversity in nature. Bee populations are rapidly declining around the world due to habitat loss, pollution and the use of pesticides, among other factors. The number of points in each square represents the number of bee colonies that exist during the months of October - December each year."
+cap <- "Data: USDA | Graphic: N. Rennie"
+```
+
+## Textual Graph
+```{r}
+text_plot <- basic_plot +
+  labs(
+    title = title,
+    subtitle = st,
+    caption = cap,
+    x = NULL, y = NULL
+  )
+text_plot
+```
+
+## Adjusting themes
+Starting with void, and working from there
+```{r}
+theme_plot <- text_plot +
+  coord_fixed(expand = FALSE) +
+  theme_void(
+    base_family = body_font,
+    base_size = 7.5
+  )
+theme_plot
+```
+
+## Final plot
+```{r}
+library(ggtext)
+theme_plot +
+  theme(
+    # background colors
+    plot.background = element_rect(
+      fill = bg_col, color = bg_col
+    ),
+    panel.background = element_rect(
+      fill = highlight_col, color = highlight_col
+    ),
+    # facet labels
+    strip.text.x = element_text(
+      color = highlight_col,
+      margin = margin(t = 5)
+    ),
+    strip.text.y = element_text(
+      color = highlight_col,
+      angle = 90,
+      margin = margin(r = 5)
+    ),
+    # text formatting
+    plot.title = element_text(
+      color = highlight_col,
+      face = "bold"
+    ),
+    plot.subtitle = element_textbox_simple(
+      color = highlight_col,
+      margin = margin(t = 5, b = 5)
+    ),
+    plot.caption = element_text(
+      color = highlight_col,
+      margin = margin(t = 5),
+      hjust = 0
+    ),
+    plot.margin = margin(5, 10, 5, 5)
+  )
+```
