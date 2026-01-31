@@ -218,3 +218,51 @@ theme_plot +
     plot.margin = margin(5, 10, 5, 5)
   )
 ```
+
+## An alternative plot (wrangling)
+```{r}
+library(statebins)
+library(colorspace)
+## filter down to 2015 October for a calculation
+colonycompare <- colony |> 
+  filter(months=="October-December",
+         !(state %in% c("United States", "Other States")),
+         year==2015) |> 
+        rename(beginning=colony_n) |> 
+        select(state, beginning)
+
+colonyplot2 <- colony |> 
+  filter(months=="October-December",
+         !(state %in% c("United States", "Other States"))) |> 
+  left_join(colonycompare,
+              by="state") |> 
+  mutate(change=((colony_n-beginning)/beginning)*100) |> 
+  select(year, state, colony_n, beginning, change)
+
+head(colonyplot2)
+```
+
+## An alternative plot
+```{r}
+colonyplot2 |> 
+  ggplot(aes(state=state, fill=change)) +
+  geom_statebins() +
+  coord_equal() +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0) +
+  facet_wrap(~year) +
+  labs(title="2015-20 Fall Bee Counts") +
+  theme_statebins(base_family = "red hat") +
+  theme(plot.title=element_text(size=16, hjust=0)) +
+  theme(plot.margin = margin(30,30,30,30)) +
+  theme(
+    legend.key.size = unit(1.5, "cm"), # Increase the key box size
+    legend.title = element_text(size = 6, face = "bold"), # Increase title size and make bold
+    legend.text = element_text(size = 6) # Increase label size
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 3)), # Increase symbol size for 'color' legend
+    shape = guide_legend(override.aes = list(size = 3))  # Increase symbol size for 'shape' legend
+  ) +
+    theme(legend.position="right")
+
+```
