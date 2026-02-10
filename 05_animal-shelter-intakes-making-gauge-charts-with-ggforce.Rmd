@@ -2,9 +2,373 @@
 
 **Learning objectives:**
 
-- THESE ARE NICE TO HAVE BUT NOT ABSOLUTELY NECESSARY
+- Create a gauge chart by programmatically calculating sizes of plot elements to use new geom functions from the ggforce package;
+- See how choosing a different aspect ratio or coordinate system can change the look of a chart;
+- Analyse your choice of color(s) to check if they are likely to be accessible to people with color vision deficiency.
 
-## SLIDE 1 {-}
+## Overview of Chapter {-}
 
-- ADD SLIDES AS SECTIONS (`##`).
-- TRY TO KEEP THEM RELATIVELY SLIDE-LIKE; THESE ARE NOTES, NOT THE BOOK ITSELF.
+Chapter is structured the same as the other chapters covered so far:
+  
+  - Exploratory work
+  
+  -Preparing A Plot
+    
+    - Data Wrangling
+    - The ggforce extension package
+    - Gauge Charts with ggforce
+    - Computing Aesthetics
+    - The First Plot
+  
+  -Advanced Styling
+
+## Quick Note on Packages {-}
+
+For this chapter we again have to use packages not available on CRAN. To install you can use the following syntax:
+```{r Installing and Loading Libraries, include=TRUE, echo=TRUE, message=FALSE, warning = FALSE}
+# Installing the dependencies for colorblindr as well as colorblindr
+
+# remotes::install_github("wilkelab/cowplot")
+# install.packages("colorspace", repos = "http://R-Forge.R-project.org")
+# remotes::install_github("clauswilke/colorblindr")
+
+# Loading Libraries ----
+library(colorblindr)
+library(dplyr)
+library(ggforce)
+library(ggplot2)
+library(ggtext)
+library(lubridate)
+library(scales)
+library(showtext)
+library(sysfonts)
+library(tidyr)
+library(tidytuesdayR)
+```
+
+
+## Exploratory Work {-}
+ In this section Rennie covers 2 things:
+  
+  Data Exploration and the Exploratory Sketches
+
+## Data Exploration {-}
+```{r, include=FALSE, echo=FALSE, message=FALSE, warning = FALSE}
+# Loading in the needed data
+tuesdata <- tt_load("2025-03-04")
+longbeach <- tuesdata$longbeach
+str(longbeach)
+head(longbeach)
+```
+
+```{r}
+barplot(
+  table(longbeach$animal_type),
+  las = 1,
+  horiz = TRUE
+)
+```
+
+```{r}
+plot(
+  x = table(longbeach$intake_date),
+  xlab = "", ylab = "",
+  main = "Number of animals surrendered per day"
+)
+```
+
+```{r}
+heatmap(
+  table(
+    longbeach$animal_type,
+    year(longbeach$intake_date)
+  ),
+  # prevent re-ordering
+  Rowv = NA,
+  Colv = NA,
+  # make labels smaller so they fit on the page
+  margins = c(3, 6),
+  cexRow = 1,
+  cexCol = 1
+)
+```
+
+
+## Exploratory Sketches {-}
+
+Rennie ends up deciding on a double gauge chart where each animal has a gauge per year that are displayed together
+
+![]https://nrennie.rbind.io/art-of-viz/animal-intakes.html#fig-longbeach-sketch
+
+## Data Wrangling {-}
+The first decision Rennie makes is to limit the years to 2017 and 2023 in hopes 
+of highlighting the change that happened across all years.
+```{r}
+# subset data for years and combine aninmal types
+intake_data <- longbeach |>
+  mutate(
+    year = year(intake_date),
+    animal_type = if_else(
+      animal_type %in% c(
+        "dog", "cat", "bird",
+        "wild", "reptile"
+      ),
+      animal_type,
+      "other"
+    )
+  ) |>
+  filter(
+    year %in% c(2017, 2023)
+  ) |>
+  count(year, animal_type)
+head(intake_data)
+```
+ 
+Rennie decides to take the total surrendered animals of a single type as the upper limit of the gauge chart
+
+One thing I am not understanding is why Rennie decided to set the upper limit to the max intake of a single animal type.
+Why not set upper limit to the sum of all intakes? Or differentiate by animal type?
+
+```{r}
+max_intake <- max(intake_data$n)
+upper_limit <- ceiling(max_intake / 500) * 500
+c(max_intake, upper_limit)
+```
+
+## Data Wrangling cont.{-}
+This is where the bulk of the data wrangling happens. Rennie is taking the original dataframe/tibble that had an observation per year, animal, and count
+and spreading it so that instead of each animal having an observation per year each animal has an observation for how much progress is being made towards the upper limit and how much is missing (value and no_value respectively). Rennie also adds where the gauge chart bars are going to end for each year (ymax_x)
+
+```{r}
+intake_YN <- intake_data |>
+  mutate(
+    value = n / upper_limit,
+    no_value = 1 - value
+  ) |>
+  select(-n) |>
+  pivot_longer(
+    cols = c(value, no_value),
+    names_to = "YN",
+    values_to = "perc"
+  ) |>
+  pivot_wider(
+    names_from = "year",
+    values_from = "perc"
+  ) |>
+  mutate(YN = factor(YN))
+
+plot_data <- intake_YN |>
+  group_by(animal_type) |>
+  mutate(
+    ymax_2017 = cumsum(`2017`),
+    ymax_2023 = cumsum(`2023`)
+  )
+head(plot_data)
+
+n_types <- length(
+  unique(plot_data$animal_type)
+)
+ymin_data <- plot_data |>
+  ungroup() |>
+  # start values for 2017 arc
+  mutate(
+    ymin_2017 = c(rbind(
+      rep(0, n_types),
+      (slice_head(plot_data, n = -1) |>
+        pull(ymax_2017))
+    ))
+  ) |>
+  # repeat for 2023
+  mutate(
+    ymin_2023 = c(rbind(
+      rep(0, n_types),
+      (slice_head(plot_data, n = -1) |>
+        pull(ymax_2023))
+    ))
+  )
+
+# This following code is to properl set the polar coordinates for the Gauge chart. We are starting at - pi/2 and ending at +pi/2
+gauge_data <- ymin_data |>
+  mutate(
+    across(
+      starts_with("y", ignore.case = FALSE), # ignore false 
+      ~ rescale(.,
+        to = pi * c(-0.5, 0.5),
+        from = 0:1
+      )
+    )
+  )
+head(gauge_data)
+```
+
+## First Plot {-}
+The first plot produces exactly what she outlined in her exploratory sketch. 
+My question still remains as to why Rennie set the upper limit to the animal type with the most observations. 
+ - % of total surrenders or % of total surrenders by animal type I think would be clearer to audiences/stakeholders.
+
+```{r}
+## First gauge plot
+basic_plot <- ggplot(data = gauge_data) +
+  # Outer 2023 arc
+  geom_arc_bar(
+    mapping = aes(
+      x0 = 0, y0 = 0,
+      r0 = 0.7, r = 1,
+      start = ymin_2023, end = ymax_2023,
+      fill = YN
+    )
+  ) +
+  # Inner 2017 arc
+  geom_arc_bar(
+    mapping = aes(
+      x0 = 0, y0 = 0,
+      r0 = 0.2, r = 0.5,
+      start = ymin_2017, end = ymax_2017,
+      fill = YN
+    )
+  ) +
+  facet_wrap(~animal_type, nrow = 2)
+basic_plot
+```
+
+## Advanced Styling {-}
+
+In this final section Rennie makes the following adjustments to the chart:
+
+  - Produces a second gauge chart with some minor changes
+  - Changes the color of the primary and secondary bars/Gauges as well as the background color
+  - Test/simulates how the chart would look like with colorblindness
+  - Sets the font of and defines the title, subtitle, and caption
+  - Changes the theme of the chart
+  
+## Second Gauge Chart {-}
+```{r}
+# Second gauge plot without the black outline on the sections
+basic_plot <- ggplot(data = gauge_data) +
+  geom_arc_bar(
+    mapping = aes(
+      x0 = 0, y0 = 0,
+      r0 = 0.7, r = 1,
+      start = ymin_2023, end = ymax_2023,
+      fill = YN
+    ),
+    color = NA
+  ) +
+  geom_arc_bar(
+    mapping = aes(
+      x0 = 0, y0 = 0,
+      r0 = 0.2, r = 0.5,
+      start = ymin_2017, end = ymax_2017,
+      fill = YN
+    ),
+    color = NA
+  ) +
+  facet_wrap(~animal_type, nrow = 2)
+basic_plot
+```
+
+
+## Color and font changes {-}
+```{r}
+# Setting the color options for the chart
+highlight_col <- "#990C58" # This is for the segments showing percent towards goal (animals surrendered)
+second_col <- "#949398" # For percentage remaining towards target
+bg_col <- "#DEDEDE" # Background color
+text_col <- "black" # text color
+
+# Setting text/font options
+font_add_google(name = "Ubuntu")
+showtext_auto()
+showtext_opts(dpi = 300)
+body_font <- "Ubuntu"
+
+```
+
+## Gauge Chart with Adjusted Colors {-}
+```{r}
+# Adding in the color options to the gauge chart
+color_plot <- basic_plot +
+  scale_fill_manual(
+    breaks = c("value", "no_value"),
+    values = c(highlight_col, second_col)
+  )
+color_plot
+```
+
+## Gauge Chart with Colorblindness Simulation {-}
+```{r}
+# Setting and seeing different color blind options
+cvd_grid(color_plot)
+
+```
+
+## Gauge Chart with Text Added {-}
+```{r}
+title <- "The number of animals surrendered is lower in 2023 compared to 2017"
+subtitle <- "The inner pink bar represents the number of animals surrendered in 2017, whilst the outer pink bar represents the number in 2023. A decrease is seen across all types of animals."
+caption <- "Data: City of Long Beach Animal Care Services | Graphic: N. Rennie"
+
+text_df <- data.frame(
+  x = c(0.35, 0.85),
+  y = c(-0.1, -0.1),
+  label = c(2017, 2023)
+)
+
+text_plot <- color_plot +
+  geom_text(
+    data = text_df,
+    mapping = aes(x = x, y = y, label = label),
+    family = body_font,
+    size = 3
+  ) +
+  labs(
+    title = title,
+    subtitle = subtitle,
+    caption = caption
+  )
+text_plot
+```
+
+## Gauge Chart with Adjusted Theme {-}
+```{r}
+# Adjusting the themes
+theme_plot <- text_plot +
+  coord_fixed() +
+  theme_void(base_size = 8.5, base_family = body_font)
+theme_plot
+
+# Improving styling
+styled_plot <- theme_plot +
+  theme(
+    plot.background = element_rect(
+      fill = bg_col, color = bg_col
+    ),
+    panel.background = element_rect(
+      fill = bg_col, color = bg_col
+    ),
+    strip.text = element_text(
+      size = rel(1),
+      margin = margin(b = 15)
+    ),
+    plot.title = element_text(
+      margin = margin(b = 5),
+      hjust = 0,
+      face = "bold",
+      size = rel(1)
+    ),
+    plot.subtitle = element_textbox_simple(
+      margin = margin(b = 5),
+      hjust = 0,
+      halign = 0
+    ),
+    plot.caption = element_text(
+      margin = margin(t = 10),
+      hjust = 0
+    ),
+    plot.margin = margin(3, 3, 3, 3)
+  )
+styled_plot
+
+styled_plot +
+  theme(legend.position = "none")
+```
