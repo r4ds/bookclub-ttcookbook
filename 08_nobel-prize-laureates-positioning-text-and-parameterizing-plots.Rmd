@@ -2,9 +2,258 @@
 
 **Learning objectives:**
 
-- THESE ARE NICE TO HAVE BUT NOT ABSOLUTELY NECESSARY
+-   Build URLs in R in order to extract data from an API;
+-   Create a new type of plot with core functions in `ggplot2` by using a little bit of trigonometry; and
+-   Parameterize your plotting code to create a function, to make it easier to produce lots of similar graphics with a consistent layout.
 
-## SLIDE 1 {-}
+## Understanding Process {-}
 
-- ADD SLIDES AS SECTIONS (`##`).
-- TRY TO KEEP THEM RELATIVELY SLIDE-LIKE; THESE ARE NOTES, NOT THE BOOK ITSELF.
+-   Bringing in the data
+
+-   Exploratory work:
+
+    -   Data exploration
+
+    -   Exploratory sketches
+
+-   Preparing a plot:
+
+    -   Data wrangling
+
+    -   A first plot
+
+    -   Iterative Revisions
+
+        -   Using new packages
+
+        -   Styling using `theme`
+
+## New way of pulling data {-}
+
+```{r}
+library(dplyr) ## don't need all of tidyverse
+library(readr)
+library(glue)
+
+api_url <- "http://api.nobelprize.org/2.1/laureates"
+nobel_physics <- read_csv(
+  glue(
+    "{api_url}?limit=250&nobelPrizeCategory=phy&format=csv"
+  )
+)
+
+head(nobel_physics)
+```
+
+## Data Exploration {-}
+```{r}
+library(ggplot2)
+library(lubridate)
+
+nobel_physics |> 
+    ggplot(aes(y=year-year(birthdate), x=year, color=gender)) +
+    geom_point() +
+    labs(y="Age at award", x="Year of award", title="Nobel Prize laureates in physics")
+```
+
+## Exploratory sketches {-}
+![](https://nrennie.rbind.io/art-of-viz/images/sketch-nobel.png)
+
+## Wrangling the data {-}
+```{r}
+nobel_category <- "Physics"
+
+physics_data <- nobel_physics |>
+  filter(category == nobel_category) |>
+  select(name, gender, year) |>
+  arrange(year)
+```
+
+## A first plot, using coord_radial {-}
+```{r}
+ggplot() +
+  geom_text(
+    data = physics_data,
+    aes(x = year, y = 5, color=gender, label=name),
+    angle=90, hjust=0) +
+  coord_radial(theta="x",
+             rotate_angle=TRUE, 
+             expand=FALSE, 
+             start=3*pi/4, 
+             end=pi/4, 
+             reverse="theta") +
+  theme_void() + theme(legend.position = "none")
+```
+
+## Advanced Styling - Fonts and Colors {-}
+```{r}
+library(sysfonts)
+library(showtext)
+
+font_add_google(name = "Passion One")
+font_add_google(name = "Ubuntu")
+showtext_auto()
+showtext_opts(dpi = 300)
+body_font <- "Ubuntu"
+title_font <- "Passion One"
+
+bg_col <- "gray95"
+primary_col <- "black"
+secondary_col <- "gray75"
+```
+
+## Advanced Styling - Plot so far {-}
+```{r}
+col_plot <- ggplot() +
+    geom_text(
+    data = physics_data,
+    aes(x = year, y = 5, color=gender, label=name),
+    angle=90, hjust=0, family=body_font, size=1) +
+  coord_radial(theta="x",
+             rotate_angle=TRUE, 
+             expand=FALSE, 
+             start=3*pi/4, 
+             end=pi/4, 
+             reverse="theta") +
+  theme_void() + theme(legend.position = "none") +
+    scale_color_manual(values=c(
+        "male"=secondary_col, 
+        "female"=primary_col))
+col_plot
+```
+## Advanced Styling - Adding a title and caption {-}
+```{r}
+library(ggtext)
+annotated_plot <- col_plot +
+  annotate(
+    geom = "text",
+    x = 2005,
+    y = -2,
+    label = "Nobel Prize Laureates",
+    family = title_font,
+    fontface = "bold",
+    size = 6,
+    hjust=1,
+    vjust = 1.5
+  ) +
+  annotate(
+    geom = "text",
+    x = 2005,
+    y = -2,
+    label = "Physics",
+    family = body_font,
+    size = 4,
+    hjust=1,
+    vjust = 0
+  ) +
+scale_y_continuous(limits=c(-2, 7)) +
+## expand margins to make room for title and caption
+  theme(plot.margin = margin(0,4,0,0, "cm"))
+annotated_plot
+```
+
+## Parameterizing the plot {-}
+```{r}
+category_plot <- function(
+    nobel_category,
+    nobel_data,
+    r = 5,
+    bg_col = "gray95",
+    primary_col = "black",
+    secondary_col = "gray70",
+    body_font = "Ubuntu",
+    title_font = "Passion One") {
+  # Data wrangling
+  category_data <- nobel_data |>
+    filter(category == nobel_category) |>
+    select(name, gender, year) |>
+    arrange(year)
+  plot_data <- category_data |>
+    mutate(
+      theta = seq(
+        from = pi / 4,
+        to = (7 / 4) * pi,
+        length.out = nrow(category_data)
+      ),
+      x = r * cos(theta),
+      y = r * sin(theta),
+      angle = 180 + 360 * (theta / (2 * pi))
+    )
+  # Plot
+  g <- ggplot() +
+    geom_text(
+      data = plot_data,
+      mapping = aes(
+        x = x, y = y,
+        label = name,
+        angle = angle,
+        color = gender
+      ),
+      family = body_font,
+      hjust = 1,
+      size = 1
+    ) +
+    scale_color_manual(
+      values = c(
+        "male" = secondary_col,
+        "female" = primary_col
+      )
+    ) +
+    annotate("text",
+      x = 10, y = 0,
+      label = "Nobel Prize Laureates",
+      hjust = 1,
+      color = primary_col,
+      family = title_font,
+      size = 7
+    ) +
+    annotate("text",
+      x = 10, y = -1,
+      label = nobel_category,
+      hjust = 1,
+      color = primary_col,
+      family = body_font,
+      size = 5
+    ) +
+    scale_x_continuous(limits = c(-9, 12)) +
+    scale_y_continuous(limits = c(-7.5, 7.5)) +
+    coord_fixed() +
+    theme_void(base_size = 6, base_family = body_font) +
+    theme(
+      legend.position = "none",
+      plot.background = element_rect(
+        fill = bg_col, color = bg_col
+      ),
+      panel.background = element_rect(
+        fill = bg_col, color = bg_col
+      ),
+      plot.caption = element_textbox_simple(
+        color = primary_col,
+        hjust = 0,
+        halign = 0,
+        lineheight = 0.5,
+        margin = margin(l = 5, b = 5)
+      )
+    )
+  return(g)
+}
+```
+
+## Testing the function {-}
+```{r}
+nobel_peace <- read.csv(
+  glue(
+    "{api_url}?limit=250&nobelPrizeCategory=pea&format=csv"
+  )
+)
+
+peace_plot <- category_plot(
+  "Peace",
+  nobel_peace,
+  r = 4,
+  bg_col = "#FFEDE1",
+  primary_col = "#8B1E3F",
+  secondary_col = "#7286A0"
+)
+peace_plot
+```
