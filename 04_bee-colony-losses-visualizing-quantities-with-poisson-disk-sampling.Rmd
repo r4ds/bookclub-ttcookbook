@@ -55,7 +55,7 @@ colony |>
     labs(caption="United States shows up...")
 ```
 
-## Looking for missing data
+## Looking for missing data {-}
 ```{r}
 library(visdat)
 
@@ -66,11 +66,11 @@ colony |>
   theme(plot.margin = margin(r = 25))
 ```
 
-## Exploratory sketch
+## Exploratory sketch {-}
 
 ![](https://nrennie.rbind.io/art-of-viz/images/sketch-bees.png)
 
-## Preparing a plot
+## Preparing a plot {-}
 Limiting to 5 states
 ```{r}
 
@@ -94,7 +94,7 @@ state_levels <- plot_data |>
   pull(state)
 ```
 
-## getting a Poisson disk
+## getting a Poisson disk {-}
 ```{r}
 library(poissoned)
 bees_grid <- plot_data |>
@@ -112,7 +112,7 @@ bees_plot_data <- bees_grid |>
   )
 ```
 
-## A first plot
+## A first plot {-}
 ```{r}
 basic_plot <- ggplot(
   data = bees_plot_data,
@@ -122,7 +122,7 @@ basic_plot <- ggplot(
 basic_plot
 ```
 
-## Styling
+## Styling {-}
 ```{r}
 bg_col <- "#FECC27"
 highlight_col <- "black"
@@ -139,7 +139,7 @@ basic_plot <- ggplot(
 basic_plot
 ```
 
-## Font and text
+## Font and text {-}
 ```{r}
 library(showtext)
 
@@ -155,7 +155,7 @@ st <- "Bees are vital for the preservation of ecological balance and biodiversit
 cap <- "Data: USDA | Graphic: N. Rennie"
 ```
 
-## Textual Graph
+## Textual Graph {-}
 ```{r}
 text_plot <- basic_plot +
   labs(
@@ -167,7 +167,7 @@ text_plot <- basic_plot +
 text_plot
 ```
 
-## Adjusting themes
+## Adjusting themes {-}
 Starting with void, and working from there
 ```{r}
 theme_plot <- text_plot +
@@ -179,7 +179,7 @@ theme_plot <- text_plot +
 theme_plot
 ```
 
-## Final plot
+## Final plot {-}
 ```{r}
 library(ggtext)
 theme_plot +
@@ -219,7 +219,7 @@ theme_plot +
   )
 ```
 
-## An alternative plot (wrangling)
+## An alternative plot (wrangling) {-}
 ```{r}
 library(statebins)
 library(colorspace)
@@ -242,27 +242,26 @@ colonyplot2 <- colony |>
 head(colonyplot2)
 ```
 
-## An alternative plot
+## An alternative plot {-}
 ```{r}
 colonyplot2 |> 
   ggplot(aes(state=state, fill=change)) +
   geom_statebins() +
   coord_equal() +
-  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0) +
+  scale_fill_gradient2(low= "#8E063B", mid="#E2E2E2", high="#023FA5", midpoint=0,
+    labels = scales::label_percent(scale=1)) +
   facet_wrap(~year) +
-  labs(title="2015-20 Fall Bee Counts") +
-  theme_statebins(base_family = "red hat") +
-  theme(plot.title=element_text(size=16, hjust=0)) +
-  theme(plot.margin = margin(30,30,30,30)) +
-  theme(
-    legend.key.size = unit(1.5, "cm"), # Increase the key box size
-    legend.title = element_text(size = 6, face = "bold"), # Increase title size and make bold
-    legend.text = element_text(size = 6) # Increase label size
-  ) +
+  ## label legend for percent change
+  theme_void() +
+  theme(legend.position="bottom",
+  panel.background=element_rect(linewidth=1, color="black"),
+  plot.title.position="plot") +
   guides(
-    color = guide_legend(override.aes = list(size = 3)), # Increase symbol size for 'color' legend
-    shape = guide_legend(override.aes = list(size = 3))  # Increase symbol size for 'shape' legend
+    fill = guide_legend(title.position = "bottom") # Places the title above the horizontal legend keys
   ) +
-    theme(legend.position="right")
+  labs(title="Percent Change of Bee Colonies since 2015 by State",
+    subtitle= "While some large bee colony states (CA), were affected, it seems like some states actually improved \nthe number of bee colonies over time",
+    caption = "Source: USDA, TidyTuesday 2021 Week 2",
+    fill = "Percent Change since 2015")
 
 ```
