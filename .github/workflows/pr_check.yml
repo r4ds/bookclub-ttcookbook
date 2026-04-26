@@ -5,6 +5,8 @@ on:
       - 'README.md'
   workflow_dispatch:
 
+name: pr_check
+
 jobs:
   render_book:
     runs-on: ubuntu-latest
