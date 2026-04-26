@@ -5,8 +5,10 @@ on:
       - 'README.md'
   workflow_dispatch:
 
+name: bookdown
+
 jobs:
-  bookdown:
+  render:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
