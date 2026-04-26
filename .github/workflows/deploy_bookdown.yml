@@ -7,4 +7,44 @@ on:
 
 jobs:
   bookdown:
-    uses: r4ds/r4dsactions/.github/workflows/render_pages.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          extra-repositories: ${{ inputs.extra-repositories }}
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          cache-version: 1
+      - name: Setup git credentials for gitcreds
+        run: |
+          git config --global credential.helper store
+          echo "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com" > ~/.git-credentials
+      - name: Render Book
+        run: Rscript -e 'bookdown::render_book("index.Rmd")'
+      - uses: actions/upload-pages-artifact@main
+        with:
+          path: _book/
+
+  deploy:
+    # Add a dependency to the build job
+    needs: render
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@main
