@@ -11,7 +11,7 @@ As we read, we are producing [notes about the book](https://dslc.io/ttcookbook).
 
 If you would like to present, please see the sign-up sheet for your cohort (linked below, and pinned in the [#book_club-ttcookbook](https://dslcio.slack.com/archives/C09P0RWBY77) channel on Slack)!
 
-- [Cohort 1](https://docs.google.com/spreadsheets/d/16llKdtok-HAbhDLJfw1wiOAtYsuLEtZy-edqFw1ajs8/edit?usp=sharing) (started 2026-01-12, facilitated by Gabby Palomo): [Mondays, 12:00 PM noon CST/CDT](https://www.timeanddate.com/worldclock/converter.html?iso=20260112T180000&p1=24&p2=1440) | [meeting videos](https://www.youtube.com/playlist?list=PL3x6DOfs2NGg0MJy7d35h-OEaD8nD0OPH)
+- Cohort 1 (started 2026-01-12, ended 2026-06-22): [meeting videos](https://www.youtube.com/playlist?list=PL3x6DOfs2NGg0MJy7d35h-OEaD8nD0OPH)
 
 <hr>
 
